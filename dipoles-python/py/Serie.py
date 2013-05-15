@@ -1,6 +1,6 @@
 from Complexe import *
 
-class Serie:
+class Serie(object):
 
     def __init__(self, dipole1, dipole2):
         # constructeur

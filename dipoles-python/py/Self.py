@@ -1,6 +1,6 @@
 from Complexe import *
 
-class Self:
+class Self(object):
 
     def __init__(self, v):
         # constructeur

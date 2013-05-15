@@ -1,6 +1,6 @@
 from Complexe import *
 
-class Parallele:
+class Parallele(object):
 
     def __init__(self, dipole1, dipole2):
         # constructeur

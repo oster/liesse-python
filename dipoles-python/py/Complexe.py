@@ -1,6 +1,6 @@
 from math import sqrt, atan2
 
-class Complexe:
+class Complexe(object):
 
     def __init__(self, re, im):
         # constructeur

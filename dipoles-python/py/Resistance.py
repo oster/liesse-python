@@ -1,6 +1,6 @@
 from Complexe import *
 
-class Resistance:
+class Resistance(object):
 
     def __init__(self, v):
         # constructeur

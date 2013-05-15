@@ -1,6 +1,6 @@
 from Complexe import *
 
-class Capacite:
+class Capacite(object):
 
     def __init__(self, v):
         # constructeur
