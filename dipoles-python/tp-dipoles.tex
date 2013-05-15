@@ -1,0 +1,450 @@
+\documentclass[10pt]{article}\usepackage[ul,correction]{esial}%\usepackage[ul]{esial}
+\POO
+
+%\usepackage[utf8]{inputenc}
+\usepackage{tikz}\usetikzlibrary{arrows}
+\usepackage[american inductor]{circuitikz}
+\usepackage[latin1]{inputenc}
+\usepackage{url}
+\usepackage{amstext,amsmath,amsfonts}
+\usepackage{fancyvrb}
+\usepackage{array}
+
+%\hypersetup{pdfborder={0 0 0}}
+\renewcommand{\labelenumi}{(\alph{enumi})}
+
+\begin{document}
+\color{black}
+\title{TP : Héritage, liaison dynamique.}
+\maketitle
+
+L'objectif de ce TP est de concevoir un programme permettant de modéliser les
+dipôles électriques, puis de calculer leur \emph{impédance}.
+
+
+\section{Le problème}
+
+Les dipôles sont composés de composants ``élémentaires'' : \emph{résistance},
+\emph{self} et \emph{capacité}. Ces composants élémentaires peuvent être
+combinés par un montage \emph{en série} ou \emph{en parallèle}.
+
+
+Soit $\omega$ un nombre réel appelé \emph{pulsation} et $i$ le nombre complexe
+de module 1 et d'argument $\pi/2$. \emph{L'impédance} $z$ d'un dipôle est un
+nombre complexe.
+
+
+\vspace{5mm}
+\noindent%
+\begin{tabular}[t]{m{95mm}m{3cm}m{3cm}}
+%\hline
+%\textit{Description} & \textit{Symbole} & \textit{Impédance} \\
+
+Une \emph{résistance} de valeur $r$ exprimée en ohms (symbole $\Omega$) 
+& \tikz \draw (0,0) to[R=$r$ en $\Omega$] (2,0); 
+& $z = r$ \\
+&&\\
+
+Une \emph{self} de valeur $l$ exprimée en henrys (symbole $H$) 
+& \tikz \draw (0,0) to[L=$l$ en H] (2,0); 
+& $z = i (\omega * l)$ \\
+&&\\
+
+Une \emph{capacité} de valeur $c$ exprimée en farad (symbole $F$)
+& \tikz \tikz \draw (0,0) to[C=$c$ en F] (2,0); 
+& $\displaystyle  z = i ( \frac{-1}{\omega*c}) $ \\[10pt]
+
+Un dipôle composé de deux dipôles d'impédance $z_1$ et $z_2$ montés \emph{en
+  série} 
+& \setlength{\unitlength}{0.9mm}%
+\begin{picture}(40,13)(0,-3)
+  \put(0, 2.5){\line(1, 0){2.5}}
+  % 
+  \put(2.5, 0){\line(0, 0){5}}
+  \put(2.5, 0){\line(1, 0){10}}
+  \put(2.5, 5){\line(1, 0){10}}
+  \put(12.5, 0){\line(0, 0){5}}
+  % 
+  \put(12.5, 2.5){\line(1, 0){5}}
+  % 
+  \put(17.5, 0){\line(0, 0){5}}
+  \put(17.5, 0){\line(1, 0){10}}
+  \put(17.5, 5){\line(1, 0){10}}
+  \put(27.5, 0){\line(0, 0){5}}
+  % 
+  \put(27.5, 2.5){\line(1, 0){2.5}}
+\end{picture}
+& $z = z_1 + z_2$ \\ 
+
+
+Un dipôle composé de deux dipôles d'impédance $z_1$ et $z_2$ montés \emph{en
+  parallèle} 
+& \setlength{\unitlength}{0.9mm}%
+\begin{picture}(40,13)(0,-3)
+  \put(2.5, 2.5){\line(1, 0){2.5}}
+  % 
+  \put(5, 0){\line(0, 0){5}}
+  \put(5, 0){\line(1, 0){20}}
+  \put(5, 5){\line(1, 0){20}}
+  \put(25, 0){\line(0, 0){5}}
+  % 
+  \put(25, 2.5){\line(1, 0){2.5}}
+  % 
+  \put(2.5, 9){\line(1, 0){2.5}}
+  % 
+  \put(5, 6.5){\line(0, 0){5}}
+  \put(5, 6.5){\line(1, 0){20}}
+  \put(5, 11.5){\line(1, 0){20}}
+  \put(25, 6.5){\line(0, 0){5}}
+  % 
+  \put(25, 9){\line(1, 0){2.5}}
+  % 
+  \put(2.5, 2.5){\line(0, 0){6.5}}
+  \put(27.5, 2.5){\line(0, 0){6.5}}
+  \put(27.5, 6){\line(1, 0){2.5}}
+  
+  \put(0, 6){\line(1, 0){2.5}}
+  
+\end{picture}
+& $\displaystyle z  = \frac{1}{\frac{1}{z_1} +\frac{1}{z_2}} $ \\ 
+
+%\hline
+\end{tabular}
+\vspace{5mm}
+
+Nous pouvons modéliser les dipôles électriques en utilisant la hiérarchie de
+classes suivante :
+
+\usetikzlibrary{arrows}
+\tikzstyle{class}=[rectangle,draw=black!50,thick]
+\tikzstyle{implements}=[dashed, -angle 45]
+\tikzstyle{extends}=[-open triangle 60]
+
+\begin{center}
+  \begin{tikzpicture}
+    \node [class] (dipole)     at (3.5,5.5)   {\textit{dipôle}}; 
+    \node [class] (resistance) at (0,4)   {Resistance};
+    \node [class] (capacite)   at (2,4)   {Capacite};
+    \node [class] (self)       at (3.5,4) {Self};
+    \node [class] (binaire)    at (4.8,4)   {Binaire$^*$};
+    \node [class] (naire)      at (6.4,4)   {NAire$^*$};
+    \draw [implements] (resistance.north) -- (dipole);
+    \draw [implements] (capacite.north) -- (dipole);
+    \draw [implements] (self.north) -- (dipole);
+    \draw [implements] (binaire.north) -- (dipole);
+    \draw [implements] (naire.north) -- (dipole);
+
+    \node [class] (serie)      at (3,3) {Serie};
+    \node [class] (parallele)  at (4.4,3) {Parallele};
+    \node [class] (nserie)     at (6.2,3) {NSerie};
+    \node [class] (nparallele) at (7.8,3) {NParallele};
+    \draw [extends] (serie.north) -- (binaire);
+    \draw [extends] (parallele.north) -- (binaire);
+    \draw [extends] (nserie.north) -- (naire);
+    \draw [extends] (nparallele.north) -- (naire);
+  \end{tikzpicture}
+\end{center}
+
+Chaque classe définira la méthode \texttt{impedance(omega)}
+permettant d'évaluer l'impé\-dance du dipôle manipulé (le paramètre
+\texttt{omega} représentant la pulsation sous la forme d'un nombre réel).
+
+% \paragraph{Rappels sur les nombres complexes}
+
+% Un nombre complexe $z$ quelconque s'écrit sous la forme $a+ib$
+% où $a$ et $b$ sont des nombres réels et $i$ est le nombre complexe de module
+% $1$ et d'argument $\pi / 2$, $a$ et $b$ s'appellent respectivement la partie
+% réelle et la partie imaginaire de $z$. Si $b = 0$, $z=a$ est un nombre réel, si
+% $a=0$, $z=ib$ est dit imaginaire pur.
+
+L'impédance d'un dipôle est en général un nombre complexe.  On peut remarquer
+que l'impédance d'une résistance est un nombre réel et que l'impédance d'une
+self ou d'une capacité sont des nombres complexes imaginaires purs.
+
+\section{Sujet du TP}
+
+\paragraph{Élements fournis.} 
+
+La classe \texttt{Complexe} qui modélise un nombre complexe.
+Cette classe permet de faire des calculs de base sur les nombres complexes.
+
+\begin{Reponse}
+  \VerbatimInput[fontsize=\small]{py/Complexe.py}
+\end{Reponse}
+
+%Vous trouverez
+%aussi dans le même répertoire les squelettes des différentes classes et
+%interfaces (\texttt{dipôle}, \texttt{Resistance}, \texttt{Binaire},
+%\texttt{NAire}, etc) réalisant la hiérarchie de classes présentée
+%précédemment. Vous trouverez enfin la classe \texttt{TestsAutomatiques} qui
+%contient des tests jUnit pour le code que vous devez écrire. Pour l'exécuter
+%depuis éclipse, ouvrez ce fichier, puis exécutez "Run as.. junit test". Pour
+%l'exécuter depuis la ligne de commande, exécutez la ligne suivante:
+
+%\fbox{\texttt{java -cp junit-4.10.jar:. org.junit.runner.JUnitCore dipôle.TestsAutomatiques}}
+
+\paragraph{Réflexion préliminaire à mener.} Il est important qu'avant de
+commencer à programmer quoique ce soit, vous parcouriez le code source des
+classes fournies pour avoir un aperçu des méthodes que vous pouvez utiliser et
+celles que vous devrez implanter.
+
+\paragraph{Notation.} Dans le langage Python, la valeur 10e-2 peut
+s'écrire \texttt{1e-2}
+\bigskip 
+
+\Exercice Nous souhaitons tout d'abord manipuler des dipôles élémentaires.
+
+
+\Question %
+Etudier la classe \texttt{Resistance} implantant le dipôle élémentaire
+résistance ainsi que sa méthode pour calculer son impédance. 
+
+
+\begin{Reponse}
+  \VerbatimInput[fontsize=\small]{py/Resistance.py}
+\end{Reponse}
+
+\Question En s'inspirant de la classe \texttt{Resistance} compléter le code de la classe \texttt{Self} permettant de calculer son
+impédance.
+
+\Question %
+Vérifiez le bon fonctionnement de votre code grâce au test qui
+calcule l'impédance du dipôle figure~\ref{fig:self} pour $\omega = 314.16$. Le
+résultat escompté est environ $ 0.0 + 21.99i$.
+
+
+\begin{Reponse}
+%  Le code présenté dans la correction est barbouillé de marqueurs pour qu'une
+%  moulinette puisse construire la solution toute seule à partir du code
+%  correct. Le plus simple pour vous est d'ignorer tous les commentaires.
+%
+%  Si vous voulez comprendre, c'est très simple. Toutes les lignes contenant la
+%  chaine KILLIT sont effacées du template. Les lignes entre BEGINKILL et
+%  ENDKILL sont également supprimées. S'il y a un REMPLACE entre les deux, le
+%  bloc est remplacé par ce qu'il y a entre REPLACE et ENDKILL. 
+%
+%  Ainsi, dans ce cas, l'attribut et le contenu du constructeur sont cachés,
+%  tandis que le contenu de la méthode est remplacé par un simple \texttt{return
+%    null}.
+%
+%  \medskip
+  \VerbatimInput[fontsize=\small,label=Self.java]{py/Self.py}
+\end{Reponse}
+
+
+\Question %
+De la même façon, écrivez la classe \texttt{Capacite} implantant le dipôle
+élémentaire capacité ainsi que sa méthode pour calculer son impédance. 
+
+
+\begin{Reponse}
+  \VerbatimInput[fontsize=\small]{py/Capacite.py}
+\end{Reponse}
+
+ 
+\begin{figure}[h]
+  \centering
+  \begin{minipage}[b]{.3\linewidth}
+    \centerline{\tikz \draw (0,0) to[L=$7\times 10^{-2}H$] (2,0);} \par
+
+    \caption{La self testée.}\label{fig:self}
+  \end{minipage}
+  \begin{minipage}[b]{.3\linewidth}
+    \centerline{\tikz \draw (0,0) to[C=$42F$] (2,0);} \par
+
+    \caption{La capacité testée.}\label{fig:capa}
+  \end{minipage}
+  \begin{minipage}[b]{.34\linewidth}
+    \centerline{\tikz \draw (0,0) to[R=$100\Omega$] (2,0);} \par
+
+    \caption{La résistance testée.}\label{fig:capa}
+  \end{minipage}
+
+\end{figure}
+
+\bigskip\Exercice
+
+Nous souhaitons maintenant construire des dipôles combinant plusieurs dipôles
+(élémentaires ou résultant déjà d'une composition). 
+\Question
+ \'Ecrivez la classe \texttt{Serie} permettant de définir un dipôle
+  composé de deux dipôles en série et son impédance. %Votre classe
+%  \texttt{Serie} devra hériter de la classe \texttt{Binaire}. 
+
+\begin{Reponse}
+  \VerbatimInput[fontsize=\small]{py/Serie.py}
+\end{Reponse}
+
+\Question %
+Vérifiez le bon fonctionnement de votre code grâce au
+ calcul de l'impédance du dipôle de la figure~\ref{fig:serie} pour $\omega =
+314.16$ \emph{(résultat escompté $\approx$ 100.0 + 15.70i).}
+ 	
+\Question De la même façon, écrivez la classe \texttt{Parallele} implantant un
+  dipôle combinant deux dipôles montés en parallèle et permettant de calculer
+  son impédance. %Votre classe \texttt{Parallele} devra hériter de la classe
+  %\texttt{Binaire}. 
+
+\begin{Reponse}
+  \VerbatimInput[fontsize=\small]{py/Parallele.py}
+\end{Reponse}	
+
+\Question %
+Vérifiez le bon fonctionnement de votre code grâce au calcul de l'impédance du dipôle de la figure
+\ref{fig:para} pour $\omega = 314.16$ \emph{(résultat escompté $\approx$ 0.2079
+  + -4.55i).}
+
+\begin{figure}[h]
+  \centering
+  \begin{minipage}[b]{.4\linewidth}
+    \centerline{\tikz \draw (0,0) to [L=$5\times 10^{-2}H$] %
+                        (2,0) to [R=$10^2\Omega$] %
+                        (4,0) ;} \par
+    \vspace{3\baselineskip}
+                      
+    \caption{Montage en série testé.}\label{fig:serie}                     
+  \end{minipage}~
+  \begin{minipage}[b]{.4\linewidth}
+    \begin{center}
+      \begin{circuitikz}
+        % Interne
+        \draw (0.5,1.7) to [L=$5\times 10^{-5}H$] (3.5,1.7);
+        \draw (0.5,3)   to [R=$10^2\Omega$]      (3.5,3);
+        \draw (3.5,3) -- (3.5,1.7);
+        \draw (0.5,3) -- (0.5,1.7);
+        % Englobant
+        \draw (0,0)     to [C=$9\times 10^{-4}F$] (4,0);
+        \draw (4,0) -- (4,2.4) -- (3.5,2.4);
+        \draw (0,0) -- (0,2.4) -- (0.5,2.4);
+        % externe
+        \draw (-0.5,1.2) to[short,o-] (0,1.2);
+        \draw  (4,1.2) to[short,-o] (4.5,1.2);
+      \end{circuitikz}
+    \end{center}
+    \vspace{-\baselineskip}
+    \caption{Montage en parallèle testé.}\label{fig:para}
+  \end{minipage}
+\end{figure}
+
+\Exercice %
+On voudrait maintenant pouvoir modéliser la mise en série ou en parallèle d'un
+nombre quelconque de dipôles. %Pour cela, vous allez définir des sous-classes de
+%la classe abstraite \texttt{NAire} qui vous est fournie.
+
+\Question %
+Écrivez la classe \texttt{NSerie} pour définir un dipôle composé d'un nombre
+quelconque de dipôles en série et le calcul de son impédance. L'impédance de
+$n$ dipôles d'impédance $\omega_i$ montés en série peut se calculer en
+utilisant la formule suivante : $\displaystyle \sum_{i=1}^{n}\omega_i$.
+
+\begin{Reponse}
+  TODO ;)	
+%  \VerbatimInput[fontsize=\small]{py/NSerie.py}
+\end{Reponse}	
+
+\Question %
+Écrivez la classe \texttt{NParallele} pour définir un dipôle composé d'un
+nombre quelconque de dipôles en parallèle et le calcul de son impédance.
+L'impédance de $n$ dipôles d'impédance $\omega_i$ montés en parallèle peut se
+calculer en utilisant la formule suivante : $\displaystyle
+\frac{1}{\displaystyle\sum_{i=1}^{n}\frac{1}{\omega_i}} $.
+
+\begin{Reponse}
+  TODO ;)
+  % \VerbatimInput[fontsize=\small]{py/NParallele.py}
+\end{Reponse}	
+
+\Question
+Testez votre code grâce au
+dipôle suivant en utilisant ces nouveaux types (sans utiliser les types
+\texttt{Serie} ou \texttt{Parallele} précédemment définis) et de calculer son
+impédance pour $\omega = 314.16$. \emph{Résultat escompté $\approx$ 104.9604 +
+  60.764i.}
+
+\begin{center}
+  \begin{circuitikz}
+    % Ligne du milieu
+    \draw (0,2) to[R=$1\Omega$] (2,2)
+                to[C=$10^{-6}F$] (8,2);
+    % Ligne du bas
+    \draw (2,0.5) to[R=$10^2\Omega$] (6,0.5)
+                  to[L=$2\times 10^{-1}H$] (8,0.5); 
+    % Ligne du haut
+    \draw (2,3.5) to[R=$10^7\Omega$] (8,3.5);
+    % Les traits manquants pour fermer la boite de droite
+    \draw (2,3.5) -- (2,0.5);
+    \draw (8,3.5) -- (8,0.5);
+    % Les connecteurs au monde extérieur
+    \draw (-0.5,2) to[short,o-] (0,2);
+    \draw (8,2) to[short,-o] (8.5,2);
+  \end{circuitikz}    
+\end{center}
+	
+
+\bigskip
+\Exercice %
+L'objectif est maintenant de vous faire \textit{instancier} des dipôles
+complexes.
+
+%\Question %
+%Implémentez les méthodes \texttt{String toString()} dans toutes vos classes, et
+%testez votre travail avec \texttt{testToString()}.
+
+\Question %
+Ecrire un programme permettant d'instancier les dipôles des
+figures~\ref{fig:dip1} et~\ref{fig:dip2}.  
+
+\begin{figure}[h]
+  \centering
+
+  \begin{minipage}{.4\linewidth}
+    \begin{circuitikz}
+      % Interne
+      \draw (0.5,1.7) to [L=$5\times 10^{-5}H$] (2.5,1.7)
+                      to [R=$12\times 10^3\Omega$] (4.5,1.7);
+      \draw (0.5,3)   to [R=$10^2\Omega$]      (4.5,3);
+      \draw (4.5,3) -- (4.5,1.7);
+      \draw (0.5,3) -- (0.5,1.7);
+      % Englobant
+      \draw (0,0)     to [C=$9\times 10^{-4}F$] (5,0);
+      \draw (5,0) -- (5,2.4) -- (4.5,2.4);
+      \draw (0,0) -- (0,2.4) -- (0.5,2.4);
+      % externe
+      \draw (-0.5,1.2) to[short,o-] (0,1.2);
+      \draw  (5,1.2) to[short,-o] (5.5,1.2);
+    \end{circuitikz}
+    \caption{Le dipôle \texttt{dip1} à réaliser.}\label{fig:dip1}
+  \end{minipage}\hfill%
+  \begin{minipage}{.5\linewidth}
+    \begin{tikzpicture}[scale=.8]
+      \draw (0.5,3) to[R=$100\Omega$] (1.5,3); % Le premier à gauche
+      \draw (1.5,3) -- (2.5,3) -- (2.5,1.5) -- (2.5,4.5); % gauche-milieu
+      \draw (6,4.5) -- (6,1.5) -- (6,3) -- (6.5,3); % milieu-droite
+      \draw (1.9,3) -- (1.9,0) -- (2,0); %milieu-bas par la gauche
+      \draw (7.5,0) -- (8,0) -- (8,3); %milieu-bas par la droite
+      \draw (7.5,3) -- (8.5,3); % droite-extreme droite
+      % ligne du bas
+      \draw (2,0) to [R=$1000\Omega$] (5,0) to [L=$2\times 10^{-1}$H] (7.5,0);
+      % A l'intérieur
+        % ligne du haut
+        \draw (2.5,4.5) to [R=$10^3\Omega$]     (4.5,4.5)
+                        to [L=$5\times 10^{-2}$] (6,4.5);
+        % ligne du milieu
+        \draw (2.5,3) to [C=$9\times 10^{-3}$] (6,3);
+        % ligne du bas
+        \draw (2.5,1.5) to [C=$9\times 10^{-4}$] (4.5,1.5) 
+                        to [C=$10^{-5}$]         (6,1.5);
+      % à droite au centre
+      \draw (6.5,3) to [R=$330\Omega$] (7.5,3);
+
+      % à l'extrême droite 
+      \draw (8.5,3) to [C=$10^{-6}$] (9.5,3);
+                        
+      % Les connecteurs au monde extérieur
+      \draw (0,3) to[short,o-] (0.5,3);
+      \draw (9.5,3) to[short,-o] (10,3);
+    \end{tikzpicture}
+    \caption{Le dipôle \texttt{dip2} à réaliser.}\label{fig:dip2}
+  \end{minipage}
+\end{figure}
+\end{document}
